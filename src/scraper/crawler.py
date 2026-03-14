@@ -17,25 +17,35 @@ def discover_categories():
     soup = get_soup(BASE_URL)
     categories = []
     if not soup: return categories
-
-    # Based on your HTML: <a href="..." class="category-link nav-link">
     links = soup.find_all('a', class_='category-link')
     for link in links:
-        name = link.find('span', itemprop='name').text.strip()
+        name_tag = link.find('span', itemprop='name')
+        name = name_tag.text.strip() if name_tag else link.text.strip()
         url = resolve_url(BASE_URL, link.get('href'))
         categories.append({'name': name, 'url': url})
     return categories
 
+def discover_subcategories(category_url):
+    """Finds subcategories (like Laptops, Tablets) on a category page."""
+    soup = get_soup(category_url)
+    subcategories = []
+    if not soup: return subcategories
+    # Subcategories are in the sidebar under the active category
+    links = soup.select('ul#side-menu li.nav-item ul.nav.flex-column li a')
+    for link in links:
+        url = resolve_url(BASE_URL, link.get('href'))
+        subcategories.append({
+            'name': link.text.strip(),
+            'url': url
+        })
+    return subcategories
+
 def get_product_links(page_url):
-    """Finds all individual product detail links on a listing page."""
     soup = get_soup(page_url)
     links = []
     if not soup: return links
-
-    # Product links are in <h4> <a class="title">
     product_anchors = soup.find_all('a', class_='title')
     for a in product_anchors:
         link = resolve_url(BASE_URL, a.get('href'))
-        if link:
-            links.append(link)
+        if link: links.append(link)
     return links
